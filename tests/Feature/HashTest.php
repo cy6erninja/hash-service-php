@@ -63,12 +63,13 @@ class HashTest extends TestCase
     {
         $collisionData = 'collisiondata';
         // Create hash ficture to have collision.
-
         $expectedResponse = [
             'item' => $this->data,
             'collisions' => [$collisionData]
         ];
+
         $response = $this->get(static::READ_URL . '/' . $this->dataHash);
+
         $response->assertStatus(200);
         $response->assertJson($expectedResponse);
     }
@@ -78,6 +79,7 @@ class HashTest extends TestCase
         $expectedResponse = ['errors' => [
             '"data" field is absent in request data.'
         ]];
+
         $response = $this->post(static::STORE_URL, []);
 
         $response->assertStatus(400);
@@ -87,9 +89,21 @@ class HashTest extends TestCase
     public function test_404_error_if_hash_is_not_found(): void
     {
         $expectedResponse = ['errors' => ['Hash ' . $this->dataHash . " is not found."]];
+
         $response = $this->get(static::READ_URL . '/' . $this->dataHash);
 
         $response->assertStatus(404);
+        $response->assertExactJson($expectedResponse);
+    }
+
+    public function test_invalid_hash_requested(): void
+    {
+        $expectedResponse = ['errors' => 'Invalid hash requested. Hash format is /^[a-f0-9]{40}$/i.'];
+        $hash = 'invalidhash';
+
+        $response = $this->get(static::READ_URL . '/' . $hash);
+
+        $response->assertStatus(400);
         $response->assertExactJson($expectedResponse);
     }
 }
