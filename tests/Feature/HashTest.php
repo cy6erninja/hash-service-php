@@ -6,7 +6,7 @@ use Tests\TestCase;
 
 class HashTest extends TestCase
 {
-    protected const string STORE_URL = '/store';
+    protected const string STORE_URL = '/hash';
     protected const string READ_URL = '/hash';
 
     protected string $data;
@@ -34,7 +34,8 @@ class HashTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_hash_is_stored_successfully_with_collisions(): void {
+    public function test_hash_is_stored_successfully_with_collisions(): void
+    {
         // Create fixtures to have collisions.
         $expectedResponse = [
             'hash' => $this->dataHash
