@@ -2,21 +2,25 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use App\Models\Hash;
 
 class HashTest extends TestCase
 {
-    protected const string STORE_URL = '/hash';
-    protected const string READ_URL = '/hash';
+    use RefreshDatabase;
+
+    protected const string HASH_URL = '/hash';
 
     protected string $data;
+    protected string $collisionData;
     protected string $dataHash;
 
     protected function setUp(): void
     {
         parent::setUp();
-
         $this->data = 'teststring';
+        $this->collisionData = 'collisiondata';
         $this->dataHash = sha1($this->data);
     }
 
@@ -26,7 +30,7 @@ class HashTest extends TestCase
             'hash' => $this->dataHash
         ];
 
-        $response = $this->post(static::STORE_URL, [
+        $response = $this->postJson(static::HASH_URL, [
             'data' => $this->data
         ]);
 
@@ -36,12 +40,15 @@ class HashTest extends TestCase
 
     public function test_hash_is_stored_successfully_with_collisions(): void
     {
-        // Create fixtures to have collisions.
+        Hash::factory()->create([
+            'data' => $this->collisionData,
+            'data_hash' => $this->dataHash
+        ]);
         $expectedResponse = [
             'hash' => $this->dataHash
         ];
 
-        $response = $this->post(static::STORE_URL, [
+        $response = $this->postJson(static::HASH_URL, [
             'data' => $this->data
         ]);
 
@@ -51,9 +58,13 @@ class HashTest extends TestCase
 
     public function test_hash_is_read_successfully_without_collisions(): void
     {
-        $expectedResponse = ['item' => $this->dataHash];
+        Hash::factory()->create([
+            'data' => $this->data,
+            'data_hash' => $this->dataHash
+        ]);
+        $expectedResponse = ['item' => $this->data];
 
-        $response = $this->get(static::READ_URL . '/' . $this->dataHash);
+        $response = $this->get(static::HASH_URL . '/' . $this->dataHash);
 
         $response->assertStatus(200);
         $response->assertExactJson($expectedResponse);
@@ -62,13 +73,23 @@ class HashTest extends TestCase
     public function test_hash_is_read_successfully_with_collisions(): void
     {
         $collisionData = 'collisiondata';
+
+        Hash::factory()->create([
+            'data' => $this->data,
+            'data_hash' => $this->dataHash
+        ]);
+        Hash::factory()->create([
+            'data' => $collisionData,
+            'data_hash' => $this->dataHash
+        ]);
+
         // Create hash ficture to have collision.
         $expectedResponse = [
             'item' => $this->data,
             'collisions' => [$collisionData]
         ];
 
-        $response = $this->get(static::READ_URL . '/' . $this->dataHash);
+        $response = $this->get(static::HASH_URL . '/' . $this->dataHash);
 
         $response->assertStatus(200);
         $response->assertJson($expectedResponse);
@@ -80,7 +101,7 @@ class HashTest extends TestCase
             '"data" field is absent in request data.'
         ]];
 
-        $response = $this->post(static::STORE_URL, []);
+        $response = $this->post(static::HASH_URL, []);
 
         $response->assertStatus(400);
         $response->assertExactJson($expectedResponse);
@@ -90,7 +111,7 @@ class HashTest extends TestCase
     {
         $expectedResponse = ['errors' => ['Hash ' . $this->dataHash . " is not found."]];
 
-        $response = $this->get(static::READ_URL . '/' . $this->dataHash);
+        $response = $this->get(static::HASH_URL . '/' . $this->dataHash);
 
         $response->assertStatus(404);
         $response->assertExactJson($expectedResponse);
@@ -98,10 +119,13 @@ class HashTest extends TestCase
 
     public function test_invalid_hash_requested(): void
     {
-        $expectedResponse = ['errors' => 'Invalid hash requested. Hash format is /^[a-f0-9]{40}$/i.'];
         $hash = 'invalidhash';
+        $expectedResponse = [
+            'errors' =>
+            "Invalid hash requested: $hash. Hash format is /^[a-f0-9]{40}$/i."
+        ];
 
-        $response = $this->get(static::READ_URL . '/' . $hash);
+        $response = $this->get(static::HASH_URL . '/' . $hash);
 
         $response->assertStatus(400);
         $response->assertExactJson($expectedResponse);
