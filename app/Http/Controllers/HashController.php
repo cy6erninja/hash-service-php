@@ -4,11 +4,16 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
-use App\Models\Hash;
+use App\Services\HashServiceInterface as ServicesHashServiceInterface;
 use Illuminate\Support\Facades\Validator;
 
 class HashController extends Controller
 {
+    public function __construct(
+        protected ServicesHashServiceInterface $hashService
+    ) {
+    }
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -24,16 +29,10 @@ class HashController extends Controller
             );
         }
 
-        $data = $request->json()->get('data');
-
-        $dataHash = sha1($data);
-
-        $hash = new Hash();
-        $hash->fill(['data' => $data, 'data_hash' => $dataHash]);
-        $hash->save();
+        $hash = $this->hashService->createHash($request->json()->get('data'));
 
         return Response::json([
-            'hash' => $dataHash
+            'hash' => $hash
         ]);
     }
 
@@ -57,8 +56,7 @@ class HashController extends Controller
             ], 400);
         }
 
-        $hashCollection = Hash::where('data_hash', $hash)->get();
-        $dataArray = array_map(fn ($item) => $item->data, $hashCollection->all());
+        $dataArray = $this->hashService->retrieveData($hash);
 
         if (count($dataArray) === 0) {
             return Response::json([
