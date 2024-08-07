@@ -18,9 +18,7 @@ class HashController extends Controller
         if ($validator->fails()) {
             return Response::json(
                 [
-                    'errors' => [
-                        '"data" field is absent in request data.'
-                    ]
+                    'errors' => $validator->errors()
                 ],
                 400
             );
@@ -42,14 +40,20 @@ class HashController extends Controller
     public function read(string $hash)
     {
         $regexp = '/^[a-f0-9]{40}$/i';
-        $validator = Validator::make(['hash' => $hash], ['hash' => "regex:$regexp"]);
-
-        if ($validator->fails()) {
-            return Response::json([
-                'errors' => sprintf(
+        $validator = Validator::make(
+            ['hash' => $hash],
+            ['hash' => "regex:$regexp"],
+            [
+                'regex' => sprintf(
                     "Invalid hash requested: %s. Hash format is $regexp.",
                     $hash
                 ),
+            ]
+        );
+
+        if ($validator->fails()) {
+            return Response::json([
+                'errors' => $validator->errors()
             ], 400);
         }
 

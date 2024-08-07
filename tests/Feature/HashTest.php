@@ -97,9 +97,7 @@ class HashTest extends TestCase
 
     public function test_hash_is_not_stored_without_data_field_provided(): void
     {
-        $expectedResponse = ['errors' => [
-            '"data" field is absent in request data.'
-        ]];
+        $expectedResponse = ['errors' => ['data' => ["The data field is required."]]];
 
         $response = $this->post(static::HASH_URL, []);
 
@@ -121,8 +119,7 @@ class HashTest extends TestCase
     {
         $hash = 'invalidhash';
         $expectedResponse = [
-            'errors' =>
-            "Invalid hash requested: $hash. Hash format is /^[a-f0-9]{40}$/i."
+            'errors' => ['hash' => ["Invalid hash requested: $hash. Hash format is /^[a-f0-9]{40}$/i."]]
         ];
 
         $response = $this->get(static::HASH_URL . '/' . $hash);
