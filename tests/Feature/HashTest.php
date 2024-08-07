@@ -72,27 +72,26 @@ class HashTest extends TestCase
 
     public function test_hash_is_read_successfully_with_collisions(): void
     {
-        $collisionData = 'collisiondata';
 
         Hash::factory()->create([
             'data' => $this->data,
             'data_hash' => $this->dataHash
         ]);
         Hash::factory()->create([
-            'data' => $collisionData,
+            'data' => $this->collisionData,
             'data_hash' => $this->dataHash
         ]);
 
         // Create hash ficture to have collision.
         $expectedResponse = [
             'item' => $this->data,
-            'collisions' => [$collisionData]
+            'collisions' => [$this->collisionData]
         ];
 
         $response = $this->get(static::HASH_URL . '/' . $this->dataHash);
 
         $response->assertStatus(200);
-        $response->assertJson($expectedResponse);
+        $response->assertExactJson($expectedResponse);
     }
 
     public function test_hash_is_not_stored_without_data_field_provided(): void
