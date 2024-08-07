@@ -34,8 +34,8 @@ class HashTest extends TestCase
             'data' => $this->data
         ]);
 
-        $response->assertExactJson($expectedResponse);
         $response->assertStatus(200);
+        $response->assertExactJson($expectedResponse);
     }
 
     public function test_hash_is_stored_successfully_with_collisions(): void
@@ -45,15 +45,16 @@ class HashTest extends TestCase
             'data_hash' => $this->dataHash
         ]);
         $expectedResponse = [
-            'hash' => $this->dataHash
+            'hash' => $this->dataHash,
+            'additional_message' => 'Warning: collision detected for provided data.'
         ];
 
         $response = $this->postJson(static::HASH_URL, [
             'data' => $this->data
         ]);
 
-        $response->assertExactJson($expectedResponse);
         $response->assertStatus(200);
+        $response->assertExactJson($expectedResponse);
     }
 
     public function test_hash_is_read_successfully_without_collisions(): void

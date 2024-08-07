@@ -4,13 +4,17 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
-use App\Services\HashServiceInterface as ServicesHashServiceInterface;
+use App\Services\HashServiceInterface;
 use Illuminate\Support\Facades\Validator;
 
 class HashController extends Controller
 {
+    public const string MESSAGE_COLLISION_DETECTED = "Warning: collision detected for provided data.";
+    public const string TEMPLATE_INVALID_HASH_REQUESTED = "Invalid hash requested: %s. Hash format is %s.";
+    public const string TEMPLATE_HASH_IS_NOT_FOUND = "Hash %s is not found.";
+
     public function __construct(
-        protected ServicesHashServiceInterface $hashService
+        protected HashServiceInterface $hashService
     ) {
     }
 
@@ -30,6 +34,14 @@ class HashController extends Controller
         }
 
         $hash = $this->hashService->createHash($request->json()->get('data'));
+        $collisions = $this->hashService->retrieveData($hash);
+
+        if (count($collisions) > 1) {
+            return Response::json([
+                'hash' => $hash,
+                'additional_message' => static::MESSAGE_COLLISION_DETECTED
+            ]);
+        }
 
         return Response::json([
             'hash' => $hash
@@ -44,8 +56,9 @@ class HashController extends Controller
             ['hash' => "regex:$regexp"],
             [
                 'regex' => sprintf(
-                    "Invalid hash requested: %s. Hash format is $regexp.",
-                    $hash
+                    static::TEMPLATE_INVALID_HASH_REQUESTED,
+                    $hash,
+                    $regexp
                 ),
             ]
         );
@@ -61,7 +74,7 @@ class HashController extends Controller
         if (count($dataArray) === 0) {
             return Response::json([
                 'errors' => [
-                    sprintf('Hash %s is not found.', $hash)
+                    sprintf(static::TEMPLATE_HASH_IS_NOT_FOUND, $hash)
                 ]
             ], 404);
         }
