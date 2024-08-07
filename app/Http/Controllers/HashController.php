@@ -5,14 +5,17 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
 use App\Models\Hash;
+use Illuminate\Support\Facades\Validator;
 
 class HashController extends Controller
 {
     public function store(Request $request)
     {
-        $data = $request->json()->get('data');
+        $validator = Validator::make($request->all(), [
+            'data' => 'required'
+        ]);
 
-        if (!$data) {
+        if ($validator->fails()) {
             return Response::json(
                 [
                     'errors' => [
@@ -22,6 +25,8 @@ class HashController extends Controller
                 400
             );
         }
+
+        $data = $request->json()->get('data');
 
         $dataHash = sha1($data);
 
@@ -36,10 +41,13 @@ class HashController extends Controller
 
     public function read(string $hash)
     {
-        if (!preg_match('/^[a-f0-9]{40}$/i', $hash)) {
+        $regexp = '/^[a-f0-9]{40}$/i';
+        $validator = Validator::make(['hash' => $hash], ['hash' => "regex:$regexp"]);
+
+        if ($validator->fails()) {
             return Response::json([
                 'errors' => sprintf(
-                    "Invalid hash requested: %s. Hash format is /^[a-f0-9]{40}$/i.",
+                    "Invalid hash requested: %s. Hash format is $regexp.",
                     $hash
                 ),
             ], 400);
