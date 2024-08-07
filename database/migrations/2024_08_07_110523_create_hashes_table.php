@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('data');
             $table->string('data_hash');
             $table->timestamps();
+            $table->softDeletes();
             $table->index('data_hash');
         });
     }
